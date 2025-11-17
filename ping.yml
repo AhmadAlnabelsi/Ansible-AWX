@@ -1,8 +1,15 @@
 ---
-- name: Test connectivity with all hosts
+- name: Test addition playbook
   hosts: all
-  gather_facts: no
-
+  gather_facts: false
+  vars:
+    num1: 5
+    num2: 7
   tasks:
-    - name: Ping the host
-      ansible.builtin.ping:
+    - name: Add two numbers
+      ansible.builtin.set_fact:
+        result: "{{ num1 + num2 }}"
+
+    - name: Show the result
+      ansible.builtin.debug:
+        msg: "The sum of {{ num1 }} + {{ num2 }} = {{ result }}"
