@@ -20,4 +20,6 @@
         msg: |
           CPU Usage: {{ cpu_usage.stdout }}%
           RAM Usage: {{ ram_usage.stdout }}
-          Disk Usage: {{ disk_usage.stdout }_
+          Disk Usage: {{ disk_usage.stdout }}
+
+
