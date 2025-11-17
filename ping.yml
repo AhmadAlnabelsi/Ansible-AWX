@@ -1,18 +1,23 @@
 ---
-- name: Get system info
+- name: Collect system info
   hosts: all
-  gather_facts: false
+  gather_facts: yes
   tasks:
-    - name: Get CPU load
-      ansible.builtin.command: "grep 'cpu ' /proc/stat"
-      register: cpu_output
+    - name: Get CPU usage
+      shell: "top -bn1 | grep 'Cpu(s)' | awk '{print $2+$4}'"
+      register: cpu_usage
 
     - name: Get RAM usage
-      ansible.builtin.command: "free -m"
-      register: ram_output
+      shell: "free -m | awk 'NR==2{printf \"%s/%sMB\", $3,$2 }'"
+      register: ram_usage
 
-    - name: Show system info
-      ansible.builtin.debug:
+    - name: Get Disk usage
+      shell: "df -h / | awk 'NR==2{print $3\"/\"$2}'"
+      register: disk_usage
+
+    - name: Print system info
+      debug:
         msg: |
-          CPU Info: {{ cpu_output.stdout }}
-          RAM Info: {{ ram_output.stdout }}
+          CPU Usage: {{ cpu_usage.stdout }}%
+          RAM Usage: {{ ram_usage.stdout }}
+          Disk Usage: {{ disk_usage.stdout }_
