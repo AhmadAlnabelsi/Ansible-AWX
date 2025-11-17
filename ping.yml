@@ -1,15 +1,18 @@
 ---
-- name: Test addition playbook
+- name: Get system info
   hosts: all
   gather_facts: false
-  vars:
-    num1: 5
-    num2: 7
   tasks:
-    - name: Add two numbers
-      ansible.builtin.set_fact:
-        result: "{{ num1 + num2 }}"
+    - name: Get CPU load
+      ansible.builtin.command: "grep 'cpu ' /proc/stat"
+      register: cpu_output
 
-    - name: Show the result
+    - name: Get RAM usage
+      ansible.builtin.command: "free -m"
+      register: ram_output
+
+    - name: Show system info
       ansible.builtin.debug:
-        msg: "The sum of {{ num1 }} + {{ num2 }} = {{ result }}"
+        msg: |
+          CPU Info: {{ cpu_output.stdout }}
+          RAM Info: {{ ram_output.stdout }}
