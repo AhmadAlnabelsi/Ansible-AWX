@@ -2,7 +2,9 @@
 - name: Gather system utilization
   hosts: all
   gather_facts: yes
+
   tasks:
+
     - name: Get CPU usage
       shell: "top -bn1 | grep 'Cpu(s)' | awk '{print $2 + $4}'"
       register: cpu_usage
@@ -18,6 +20,6 @@
     - name: Return utilization
       debug:
         msg:
-          cpu: "{{ cpu_usage.stdout }}"
-          ram: "{{ ram_usage.stdout | round(2) }}"
+          cpu: "{{ cpu_usage.stdout | float | round(2) }}"
+          ram: "{{ ram_usage.stdout | float | round(2) }}"
           disk: "{{ disk_usage.stdout }}"
