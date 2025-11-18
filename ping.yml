@@ -1,31 +1,20 @@
 ---
-- name: Gather system info
+- name: Check Apache service status
   hosts: all
-  gather_facts: yes
+  gather_facts: no
   tasks:
-    - name: Get CPU usage
-      shell: "top -bn1 | grep 'Cpu(s)' | awk '{print $2 + $4}'"
-      register: cpu_usage
+    - name: Check if Apache is running
+      ansible.builtin.systemd:
+        name: apache2   # لو السيرفر عندك RHEL ممكن يكون httpd
+        state: started
+      register: apache_status
+      ignore_errors: yes
 
-    - name: Get RAM usage
-      shell: "free -m | awk 'NR==2{printf \"%s/%sMB (%.2f%%)\", $3,$2,$3*100/$2 }'"
-      register: ram_usage
-
-    - name: Get Disk usage
-      shell: "df -h / | awk 'NR==2{print $3 \"/\" $2 \" used: \"$5}'"
-      register: disk_usage
-
-    - name: Set Telegram message
-      set_fact:
-        telegram_msg: "Server {{ inventory_hostname }} Status:\nCPU Usage: {{ cpu_usage.stdout }}%\nRAM Usage: {{ ram_usage.stdout }}\nDisk Usage: {{ disk_usage.stdout }}"
-
-    - name: Send message to Telegram
-      uri:
-        url: "https://api.telegram.org/bot<YOUR_BOT_TOKEN>/sendMessage"
-        method: POST
-        body_format: json
-        body:
-          chat_id: "<YOUR_CHAT_ID>"
-          text: "{{ telegram_msg }}"
-        headers:
-          Content-Type: "application/json"
+    - name: Return Apache status
+      ansible.builtin.debug:
+        msg: |
+          {% if apache_status is failed %}
+          ⚠️ Apache is not running!
+          {% else %}
+          ✅ Apache is running fine.
+          {% endif %}
