@@ -1,33 +1,30 @@
 ---
 - name: Check server resources
   hosts: all
-  gather_facts: true
+  gather_facts: yes
   tasks:
     - name: Get CPU usage
-      ansible.builtin.shell: |
-        top -bn1 | grep "Cpu(s)" | awk '{print $2 + $4}'
+      ansible.builtin.shell: "top -bn1 | grep 'Cpu(s)' | awk '{print 100 - $8}'"
       register: cpu_usage
       changed_when: false
 
-    - name: Get Memory usage
-      ansible.builtin.shell: |
-        free -m | awk 'NR==2{printf "%.0f", $3*100/$2 }'
-      register: mem_usage
+    - name: Get RAM usage percentage
+      ansible.builtin.shell: "free | awk '/Mem/ {printf(\"%.2f\", $3/$2 * 100)}'"
+      register: ram_usage
       changed_when: false
 
-    - name: Get Disk usage
-      ansible.builtin.shell: |
-        df -h / | awk 'NR==2 {print $5}' | sed 's/%//'
+    - name: Get disk usage percentage
+      ansible.builtin.shell: "df -h / | awk 'NR==2 {print $5}' | sed 's/%//g'"
       register: disk_usage
       changed_when: false
 
-    - name: Fail if CPU > 80%
-      ansible.builtin.fail:
-        msg: "CRITICAL: CPU usage is above 80% ({{ cpu_usage.stdout }}%)"
-      when: cpu_usage.stdout | float > 80
-
-    - name: Set output facts
+    - name: Set fact for resource summary
       ansible.builtin.set_fact:
-        cpu: "{{ cpu_usage.stdout }}"
-        memory: "{{ mem_usage.stdout }}"
-        disk: "{{ disk_usage.stdout }}"
+        resources:
+          cpu: "{{ cpu_usage.stdout | float }}"
+          ram: "{{ ram_usage.stdout | float }}"
+          disk: "{{ disk_usage.stdout | float }}"
+
+    - name: Return JSON for n8n
+      ansible.builtin.debug:
+        msg: "{{ resources }}"
