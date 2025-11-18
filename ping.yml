@@ -1,17 +1,33 @@
 ---
-- name: Check server status
+- name: Check server resources
   hosts: all
-  gather_facts: false
+  gather_facts: true
   tasks:
-    - name: Ping servers
-      ansible.builtin.ping:
+    - name: Get CPU usage
+      ansible.builtin.shell: |
+        top -bn1 | grep "Cpu(s)" | awk '{print $2 + $4}'
+      register: cpu_usage
+      changed_when: false
 
-    - name: Check disk usage
-      ansible.builtin.shell: df -h /
-      register: disk
-      ignore_errors: yes
+    - name: Get Memory usage
+      ansible.builtin.shell: |
+        free -m | awk 'NR==2{printf "%.0f", $3*100/$2 }'
+      register: mem_usage
+      changed_when: false
 
-    - name: Fail if disk usage > 90%
+    - name: Get Disk usage
+      ansible.builtin.shell: |
+        df -h / | awk 'NR==2 {print $5}' | sed 's/%//'
+      register: disk_usage
+      changed_when: false
+
+    - name: Fail if CPU > 80%
       ansible.builtin.fail:
-        msg: "Disk usage is above 90%"
-      when: disk.stdout_lines[1].split()[4] | int > 90
+        msg: "CRITICAL: CPU usage is above 80% ({{ cpu_usage.stdout }}%)"
+      when: cpu_usage.stdout | float > 80
+
+    - name: Set output facts
+      ansible.builtin.set_fact:
+        cpu: "{{ cpu_usage.stdout }}"
+        memory: "{{ mem_usage.stdout }}"
+        disk: "{{ disk_usage.stdout }}"
